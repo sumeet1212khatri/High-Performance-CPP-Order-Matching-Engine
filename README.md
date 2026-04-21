@@ -1,6 +1,6 @@
 # ⚡ HFT Order Book Engine
 
-A high-performance, C++20 limit order book engine capable of processing **20 million orders/sec** with sub-microsecond latency. Built from scratch with production-grade matching logic, lock-free concurrency primitives, and a live benchmark UI deployed on Hugging Face Spaces.
+A high-performance, C++20 limit order book engine built from scratch with production-grade matching logic, lock-free concurrency primitives, and a live benchmark UI deployed on Hugging Face Spaces. Throughput scales with hardware — **~1.2M orders/sec on the Hugging Face cloud VM**, and significantly higher on bare-metal with native compiler optimizations (`-O3 -march=native`).
 
 > **Live Demo:** [HuggingFace Space](https://huggingface.co/spaces/) — run real benchmarks from your browser, results served directly from the C++ binary.
 
@@ -8,13 +8,13 @@ A high-performance, C++20 limit order book engine capable of processing **20 mil
 
 ## Performance
 
-| Metric | Value |
-|---|---|
-| Throughput | ~20M orders/sec |
-| P50 Latency | < 100 ns |
-| P99 Latency | < 500 ns |
-| Orders Benchmarked | 20,000,000 |
-| Build Standard | C++20, `-O3 -march=native` |
+| Metric | HF Cloud VM (live demo) | Local Bare-Metal (est.) |
+|---|---|---|
+| Throughput | ~1.24M orders/sec | significantly higher with `-march=native` |
+| Orders Benchmarked | 20,000,000 | 20,000,000 |
+| Build Standard | C++20, `-O3` | C++20, `-O3 -march=native -mtune=native` |
+
+> Cloud VM results are from a shared vCPU on Hugging Face Spaces — no AVX2, shared cache, throttled clocks. Local bare-metal numbers will vary by CPU generation.
 
 ---
 
@@ -39,7 +39,7 @@ A high-performance, C++20 limit order book engine capable of processing **20 mil
                          ▼
 ┌─────────────────────────────────────────────────────────┐
 │              Frontend (Vanilla HTML/CSS/JS)              │
-│         Live KPIs  ──  Latency histogram  ──  JSON out  │
+│         Live KPIs  ──  Raw JSON output  ──  Error display  │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -55,9 +55,9 @@ A high-performance, C++20 limit order book engine capable of processing **20 mil
 | `include/Types.h` | Fixed-width primitives, enums, constants |
 | `include/Trade.h` | Trade record, OrderModify, OrderbookSnapshot |
 | `src/main.cpp` | CLI driver with `--orders`, `--json`, `--quiet` flags |
-| `tests/test_orderbook.cpp` | 25-test suite covering all order types, edge cases, and stats |
+| `tests/test_orderbook.cpp` | 24-test suite covering all order types, edge cases, and stats |
 | `app.py` | FastAPI server wrapping the C++ binary |
-| `frontend/index.html` | Dark-theme benchmark dashboard |
+| `frontend/index.html` | Dark-theme benchmark dashboard with live KPI cards and raw JSON output |
 
 ---
 
@@ -125,7 +125,7 @@ The benchmark runs configurable synthetic workloads:
 ## Build
 
 ### Prerequisites
-- `g++` ≥ 12 or `clang++` ≥ 15 (C++20 required)
+- `g++` ≥ 11 or `clang++` ≥ 14 (C++20 required)
 - `cmake` ≥ 3.18
 - `python3`, `pip` (for API server)
 
@@ -178,9 +178,9 @@ GET /api/benchmark?orders=20000000&cancel=0.20&market=0.10
   "totalOrders": 20000000,
   "totalTrades": 3142857,
   "totalCancels": 4000000,
-  "ordersPerSecond": 19823411.23,
-  "tradesPerSecond": 3112345.67,
-  "wallTimeSeconds": 1.01,
+  "ordersPerSecond": 1240457.00,
+  "tradesPerSecond": 195231.45,
+  "wallTimeSeconds": 16.12,
   "latency": {
     "avgNs": 48.32,
     "minNs": 12.00,
@@ -201,7 +201,7 @@ GET /api/benchmark?orders=20000000&cancel=0.20&market=0.10
 
 ## Test Suite
 
-25 tests covering:
+24 tests covering:
 
 - Basic GTC match, partial fill
 - FAK hit and miss
